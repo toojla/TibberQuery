@@ -2,7 +2,8 @@
 Basic cli tool to query current electric power price and cost from Tibber
 
 # Debug in Visual Studio 2022
-Create a appsettings.Development.json file and add necessary settings based on the requirements. Afther that you should be good to go.
+Create a appsettings.Development.json file and add necessary settings based on the requirements, see the [template file](./TqTool/template.appsettings.json). Afther that you should be good to go.
+To install this tool as a global tool you will alson need an appsetting.json file with necessary settings.
 
 # Install
 Verify if the tool is installed: dotnet tool list --global
