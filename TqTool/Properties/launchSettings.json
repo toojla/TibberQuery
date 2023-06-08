@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "TqCliTool": {
+      "commandName": "Project",
+      "commandLineArgs": "cost -days 7",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "development"
+      }
+    }
+  }
+}
