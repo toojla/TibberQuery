@@ -23,6 +23,12 @@ dotnet tool update --global --add-source C:\TempExample\ TqTool
 The tool installs to folder %userprofile%\.dotnet\tools
 
 # Requirements
+There are a few requirements to this project
+
+## .net sdk
+.net 7 sdk must be installed on the client computer
+
+## Tibber api information
 Development login at tibber, https://developer.tibber.com/
 Private developer key and api endpoint which can be obtained from the developer portal at Tibber
 Key and endpoint needs to be set in appsettings file(s)
