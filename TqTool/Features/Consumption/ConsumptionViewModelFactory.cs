@@ -18,7 +18,7 @@ public class ConsumptionViewModelFactory : IConsumptionViewModelFactory
 
 			var roundedCost = (int)decimal.Round(node.Cost ?? 0, MidpointRounding.ToEven);
 			var unitPrice = node.UnitPrice ?? 0 * 100;
-			var roundedUnitPrice = Math.Round(unitPrice, 2);//(int)decimal.Round(unitPrice, MidpointRounding.ToEven);
+			var roundedUnitPrice = Math.Round(unitPrice, 2);
 			var roundedConsumption = (int)decimal.Round(node.Consumption ?? 0, MidpointRounding.ToEven);
 
 			consumptionDays.Add(new ConsumptionDay(node.From, roundedCost, roundedUnitPrice, roundedConsumption, node.ConsumptionUnit));
