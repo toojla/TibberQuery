@@ -1,4 +1,4 @@
-# Tibber Query CLI, tq
+# Tibber Query CLI, tqtool
 Basic cli tool to query current electric power price and cost from Tibber
 
 # Debug in Visual Studio 2022
