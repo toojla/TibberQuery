@@ -10,6 +10,7 @@ namespace TqTool.Tests.Features.Owner;
 
 public class OwnerTests
 {
+	const string _name = "Test Name";
 	private readonly IOwnerService _sut;
 	private readonly Mock<IGraphClientWrapper> _graphClientMock = new();
 	private readonly Mock<ILogger<OwnerService>> _logger = new();
@@ -25,8 +26,8 @@ public class OwnerTests
 	public async Task GetOwnerAsync_ShouldReturnOwnerName()
 	{
 		// Arrange
-		const string name = "Test Name";
-		var owner = new OwnerWrapper(new OwnerModel(name, "loginnametest", null));
+
+		var owner = new OwnerWrapper(new OwnerModel(_name, "loginnametest", null));
 		var ownerResponse = new GraphQLResponse<OwnerWrapper>
 		{
 			Data = owner
@@ -40,14 +41,14 @@ public class OwnerTests
 
 		// Assert
 		actual.Should().NotBeNull();
-		actual.Name.Should().Be(name);
+		actual.Name.Should().Be(_name);
 	}
 
 	[Fact]
 	public async Task GetOwnerAsync_ShouldReturnEmptyOwnerNameIfErrors()
 	{
 		// Arrange
-		var returnValue = new GraphQLResponse<OwnerWrapper>
+		var returnValueSetup = new GraphQLResponse<OwnerWrapper>
 		{
 			Data = new OwnerWrapper(new OwnerModel(string.Empty, string.Empty, null)),
 			Errors = new[] {
@@ -56,7 +57,7 @@ public class OwnerTests
 		};
 
 		_graphClientMock.Setup(x => x.SendQueryAsync<OwnerWrapper>(It.IsAny<GraphQLRequest>()))
-			.ReturnsAsync(returnValue);
+			.ReturnsAsync(returnValueSetup);
 
 		// Act
 		var actual = await _sut.GetOwnerAsync();
@@ -70,5 +71,30 @@ public class OwnerTests
 			It.IsAny<It.IsAnyType>(),
 			It.IsAny<Exception>(),
 			(Func<It.IsAnyType, Exception, string>)It.IsAny<object>()), Times.AtLeastOnce);
+	}
+
+	[Fact]
+	public async Task GetOwnerHomesAsync_ShouldReturnOwnerHomes()
+	{
+		// Arrange
+		var returnValueSetup = new GraphQLResponse<HomeWrapper>
+		{
+			Data = new HomeWrapper(new OwnerModel(_name, "loginmock",
+				new List<Home>
+				{
+					new(100, 3, "test", "testtype",
+						new Address("Adr1", "Adr2", "Adr3", "Test city", 12345, "Sweden"))
+				}))
+		};
+
+		_graphClientMock.Setup(x => x.SendQueryAsync<HomeWrapper>(It.IsAny<GraphQLRequest>()))
+			.ReturnsAsync(returnValueSetup);
+
+		// Act
+		var actual = await _sut.GetOwnerHomesAsync();
+
+		// Assert
+		actual.Should().NotBeNullOrEmpty();
+		actual.Should().HaveCountGreaterThanOrEqualTo(1);
 	}
 }
