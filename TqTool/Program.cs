@@ -10,7 +10,7 @@ using TqTool.Configuration;
 
 namespace TqTool;
 
-internal class Program
+public class Program
 {
 	private static IConfigurationRoot _configuration;
 	private static ServiceProvider _serviceProvider;

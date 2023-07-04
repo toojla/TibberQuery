@@ -1,19 +1,20 @@
 ﻿using GraphQL;
-using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.Logging;
 using TqTool.Features.Owner.Models;
+using TqTool.Infrastructure;
 
 namespace TqTool.Features.Owner;
 
 public class OwnerService : IOwnerService
 {
-	private readonly IGraphQLClient _client;
 	private readonly ILogger<OwnerService> _logger;
+	private readonly IGraphClientWrapper _graphQlClientWrapper;
 
-	public OwnerService(IGraphQLClient client, ILogger<OwnerService> logger)
+	public OwnerService(ILogger<OwnerService> logger,
+		IGraphClientWrapper graphQlClientWrapper)
 	{
-		_client = client;
 		_logger = logger;
+		_graphQlClientWrapper = graphQlClientWrapper;
 	}
 
 	public async Task<OwnerResult> GetOwnerAsync()
@@ -30,7 +31,7 @@ public class OwnerService : IOwnerService
 
 		_logger.LogDebug("Trying to get owner from service!");
 		var name = string.Empty;
-		var response = await _client.SendQueryAsync<OwnerWrapper>(query);
+		var response = await _graphQlClientWrapper.SendQueryAsync<OwnerWrapper>(query);
 
 		if (response.Errors != null && response.Errors.Any())
 		{
@@ -79,7 +80,7 @@ public class OwnerService : IOwnerService
 		};
 
 		_logger.LogDebug("Trying to get owner homes from service!");
-		var response = await _client.SendQueryAsync<HomeWrapper>(query);
+		var response = await _graphQlClientWrapper.SendQueryAsync<HomeWrapper>(query);
 
 		if (response.Errors != null && response.Errors.Any())
 		{

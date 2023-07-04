@@ -9,6 +9,7 @@ using System.Reflection;
 using TqTool.Features.Consumption;
 using TqTool.Features.Owner;
 using TqTool.Features.Price;
+using TqTool.Infrastructure;
 
 namespace TqTool.Configuration;
 
@@ -44,6 +45,7 @@ public static class SetupConfiguration
 		services.AddScoped<ICommandLineHandler, CommandLineHandler>();
 		services.AddScoped<IPriceViewModelFactory, PriceViewModelFactory>();
 		services.AddScoped<IConsumptionViewModelFactory, ConsumptionViewModelFactory>();
+		services.AddScoped<IGraphClientWrapper, GraphClientWrapper>();
 		services.AddLogging(configure => configure.AddConsole());
 		SetLogLevel(logLevel, services);
 
