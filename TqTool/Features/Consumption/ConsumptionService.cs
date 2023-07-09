@@ -1,21 +1,21 @@
 ﻿using GraphQL;
-using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.Logging;
 using TqTool.Features.Consumption.Models;
+using TqTool.Infrastructure;
 
 namespace TqTool.Features.Consumption;
 
 public class ConsumptionService : IConsumptionService
 {
-	private readonly IGraphQLClient _client;
+	private readonly IGraphClientWrapper _graphClientWrapper;
 	private readonly IConsumptionViewModelFactory _consumptionViewModelFactory;
 	private readonly ILogger<ConsumptionService> _logger;
 
-	public ConsumptionService(IGraphQLClient client,
+	public ConsumptionService(IGraphClientWrapper graphClientWrapper,
 		IConsumptionViewModelFactory consumptionViewModelFactory,
 		ILogger<ConsumptionService> logger)
 	{
-		_client = client;
+		_graphClientWrapper = graphClientWrapper;
 		_consumptionViewModelFactory = consumptionViewModelFactory;
 		_logger = logger;
 	}
@@ -67,7 +67,7 @@ public class ConsumptionService : IConsumptionService
 			Variables = new { days = noOfDays }
 		};
 
-		var result = await _client.SendQueryAsync<ConsumptionWrapper>(query);
+		var result = await _graphClientWrapper.SendQueryAsync<ConsumptionWrapper>(query);
 
 		return result;
 	}

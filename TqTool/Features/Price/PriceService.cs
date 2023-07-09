@@ -1,25 +1,25 @@
 ﻿using GraphQL;
-using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using TqTool.Features.Price.Models;
+using TqTool.Infrastructure;
 
 namespace TqTool.Features.Price;
 
 public class PriceService : IPriceService
 {
-	private readonly IGraphQLClient _client;
+	private readonly IGraphClientWrapper _graphClientWrapper;
 	private readonly IMemoryCache _memoryCache;
 	private readonly IPriceViewModelFactory _priceViewModelFactory;
 	private readonly ILogger<PriceService> _logger;
 	private const string _cacheKey = "price";
 
-	public PriceService(IGraphQLClient client,
+	public PriceService(IGraphClientWrapper graphClientWrapper,
 		IMemoryCache memoryCache,
 		IPriceViewModelFactory priceViewModelFactory,
 		ILogger<PriceService> logger)
 	{
-		_client = client;
+		_graphClientWrapper = graphClientWrapper;
 		_memoryCache = memoryCache;
 		_priceViewModelFactory = priceViewModelFactory;
 		_logger = logger;
@@ -85,7 +85,7 @@ public class PriceService : IPriceService
 					}"
 		};
 
-		var result = await _client.SendQueryAsync<PriceResultWrapper>(query);
+		var result = await _graphClientWrapper.SendQueryAsync<PriceResultWrapper>(query);
 
 		if (result.Data != null)
 		{
