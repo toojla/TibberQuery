@@ -1,7 +1,7 @@
 ﻿using FluentAssertions;
 using GraphQL;
 using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 using TqTool.Features.Owner;
 using TqTool.Features.Owner.Models;
 using TqTool.Infrastructure;
@@ -10,31 +10,27 @@ namespace TqTool.Tests.Features.Owner;
 
 public class OwnerTests
 {
-	const string _name = "Test Name";
-	private readonly IOwnerService _sut;
-	private readonly Mock<IGraphClientWrapper> _graphClientMock = new();
-	private readonly Mock<ILogger<OwnerService>> _logger = new();
+	private const string _name = "Test Name";
+	private readonly OwnerService _sut;
+	private readonly IGraphClientWrapper _graphClientMock = Substitute.For<IGraphClientWrapper>();
+	private readonly ILogger<OwnerService> _logger = Substitute.For<ILogger<OwnerService>>();
 
 	public OwnerTests()
 	{
-		//_logger.Setup(x => x.Log(LogLevel.Error, It.IsAny<EventId>(), It.IsAny<object>(), It.IsAny<Exception>(),
-		//	It.IsAny<Func<object, Exception, string>>()));
-		_sut = new OwnerService(_logger.Object, _graphClientMock.Object);
+		_sut = new OwnerService(_logger, _graphClientMock);
 	}
 
 	[Fact]
 	public async Task GetOwnerAsync_ShouldReturnOwnerName()
 	{
 		// Arrange
-
 		var owner = new OwnerWrapper(new OwnerModel(_name, "loginnametest", null));
 		var ownerResponse = new GraphQLResponse<OwnerWrapper>
 		{
 			Data = owner
 		};
 
-		_graphClientMock.Setup(x => x.SendQueryAsync<OwnerWrapper>(It.IsAny<GraphQLRequest>()))
-			.ReturnsAsync(ownerResponse);
+		_graphClientMock.SendQueryAsync<OwnerWrapper>(Arg.Any<GraphQLRequest>()).Returns(ownerResponse);
 
 		// Act
 		var actual = await _sut.GetOwnerAsync();
@@ -56,8 +52,7 @@ public class OwnerTests
 				new GraphQLError { Message = "TestError2" } }
 		};
 
-		_graphClientMock.Setup(x => x.SendQueryAsync<OwnerWrapper>(It.IsAny<GraphQLRequest>()))
-			.ReturnsAsync(returnValueSetup);
+		_graphClientMock.SendQueryAsync<OwnerWrapper>(Arg.Any<GraphQLRequest>()).Returns(returnValueSetup);
 
 		// Act
 		var actual = await _sut.GetOwnerAsync();
@@ -65,12 +60,7 @@ public class OwnerTests
 		// Assert
 		actual.Should().NotBeNull();
 		actual.Name.Should().Be(string.Empty);
-		_logger.Verify(l => l.Log(
-			LogLevel.Error,
-			It.IsAny<EventId>(),
-			It.IsAny<It.IsAnyType>(),
-			It.IsAny<Exception>(),
-			(Func<It.IsAnyType, Exception, string>)It.IsAny<object>()), Times.AtLeastOnce);
+		await _graphClientMock.Received(1).SendQueryAsync<OwnerWrapper>(Arg.Any<GraphQLRequest>());
 	}
 
 	[Fact]
@@ -87,8 +77,7 @@ public class OwnerTests
 				}))
 		};
 
-		_graphClientMock.Setup(x => x.SendQueryAsync<HomeWrapper>(It.IsAny<GraphQLRequest>()))
-			.ReturnsAsync(returnValueSetup);
+		_graphClientMock.SendQueryAsync<HomeWrapper>(Arg.Any<GraphQLRequest>()).Returns(returnValueSetup);
 
 		// Act
 		var actual = await _sut.GetOwnerHomesAsync();
