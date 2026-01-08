@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+﻿using Shouldly;
 using GraphQL;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -57,9 +57,9 @@ public class PriceTests
 		var actual = await _sut.GetPriceAsync(hours);
 
 		// Assert
-		actual.Should().NotBeNull();
-		actual.CurrentPrice.Price.Should().Be(price);
-		actual.UpcomingPrices.Should().HaveCount(1);
+		actual.ShouldNotBeNull();
+		actual.CurrentPrice.Price.ShouldBe(price);
+		actual.UpcomingPrices.ShouldHaveSingleItem();
 		_priceViewModelFactoryMock.Received(1).CreateModel(Arg.Any<PriceInfo>(), Arg.Any<int>());
 	}
 }

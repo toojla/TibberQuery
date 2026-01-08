@@ -50,6 +50,7 @@ public class PriceService : IPriceService
 		var home = homes.FirstOrDefault();
 
 		if (home == null) throw new NullReferenceException("There is no price info!");
+		if (home.CurrentSubscription == null) throw new NullReferenceException("There is no current subscription!");
 
 		var priceSummaryViewModel = _priceViewModelFactory.CreateModel(home.CurrentSubscription.PriceInfo, hours);
 		return priceSummaryViewModel;

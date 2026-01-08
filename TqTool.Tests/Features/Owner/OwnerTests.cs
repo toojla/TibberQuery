@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+﻿using Shouldly;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -36,8 +36,8 @@ public class OwnerTests
 		var actual = await _sut.GetOwnerAsync();
 
 		// Assert
-		actual.Should().NotBeNull();
-		actual.Name.Should().Be(_name);
+		actual.ShouldNotBeNull();
+		actual.Name.ShouldBe(_name);
 	}
 
 	[Fact]
@@ -58,8 +58,8 @@ public class OwnerTests
 		var actual = await _sut.GetOwnerAsync();
 
 		// Assert
-		actual.Should().NotBeNull();
-		actual.Name.Should().Be(string.Empty);
+		actual.ShouldNotBeNull();
+		actual.Name.ShouldBe(string.Empty);
 		await _graphClientMock.Received(1).SendQueryAsync<OwnerWrapper>(Arg.Any<GraphQLRequest>());
 	}
 
@@ -83,7 +83,8 @@ public class OwnerTests
 		var actual = await _sut.GetOwnerHomesAsync();
 
 		// Assert
-		actual.Should().NotBeNullOrEmpty();
-		actual.Should().HaveCountGreaterThanOrEqualTo(1);
+		actual.ShouldNotBeNull();
+		actual.ShouldNotBeEmpty();
+		actual.ShouldContain(x => true);
 	}
 }

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+﻿using Shouldly;
 using TqTool.Features.Price;
 using TqTool.Features.Price.Models;
 
@@ -32,9 +32,9 @@ public class PriceViewModelFactoryTests
 		var actual = _sut.CreateModel(priceInfo, hours);
 
 		// Assert
-		actual.Should().NotBeNull();
-		actual.CurrentPrice.Price.Should().Be(intPrice);
-		actual.CurrentPrice.Tax.Should().Be(intTax);
-		actual.UpcomingPrices.Should().HaveCount(1);
+		actual.ShouldNotBeNull();
+		actual.CurrentPrice.Price.ShouldBe(intPrice);
+		actual.CurrentPrice.Tax.ShouldBe(intTax);
+		actual.UpcomingPrices.ShouldHaveSingleItem();
 	}
 }

@@ -1,5 +1,5 @@
 ﻿using AutoFixture;
-using FluentAssertions;
+using Shouldly;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -43,8 +43,8 @@ public class ConsumptionTests
 		var actual = await _sut.GetConsumptionAsync(numberOfDays);
 
 		// Assert
-		actual.Should().NotBeNull();
-		actual.ConsumptionDays.Should().HaveCountGreaterThan(1);
+		actual.ShouldNotBeNull();
+		actual.ConsumptionDays.Count().ShouldBeGreaterThan(1);
 		_consumptionViewModelFactoryMock.Received(1).CreateModel(nodes);
 	}
 
