@@ -19,6 +19,8 @@ public static class SetupConfiguration
 	{
 		var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 		var location = Path.GetDirectoryName(Assembly.GetAssembly(typeof(Program))?.Location);
+		if (string.IsNullOrEmpty(location)) throw new InvalidOperationException("Could not determine application location.");
+
 		var configuration = new ConfigurationBuilder()
 			.SetBasePath(location)
 			.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -32,7 +34,7 @@ public static class SetupConfiguration
 	{
 		var token = configuration["apiToken"];
 		var logLevel = configuration["logLevel"] ?? "Debug";
-		var graphQlHttpClient = new GraphQLHttpClient(configuration["apiEndpoint"], new NewtonsoftJsonSerializer());
+		var graphQlHttpClient = new GraphQLHttpClient(configuration["apiEndpoint"] ?? string.Empty, new NewtonsoftJsonSerializer());
 		graphQlHttpClient.HttpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
 		var services = new ServiceCollection()
@@ -80,7 +82,7 @@ public static class SetupConfiguration
 			.ConfigureAppConfiguration((context, builder) =>
 			{
 				var location = Path.GetDirectoryName(Assembly.GetAssembly(typeof(Program))?.Location);
-				builder.SetBasePath(location);
+				builder.SetBasePath(location ?? string.Empty);
 			});
 
 		return hostBuilder;
