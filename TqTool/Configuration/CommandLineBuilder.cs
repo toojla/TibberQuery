@@ -1,8 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
 using System.CommandLine.Builder;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace TqTool;
+namespace TqTool.Configuration;
 
 public static class CommandLineBuilderFactory
 {

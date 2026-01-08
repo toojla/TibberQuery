@@ -5,41 +5,32 @@ using TqTool.Infrastructure;
 
 namespace TqTool.Features.Consumption;
 
-public class ConsumptionService : IConsumptionService
+public class ConsumptionService(
+	IGraphClientWrapper graphClientWrapper,
+	IConsumptionViewModelFactory consumptionViewModelFactory,
+	ILogger<ConsumptionService> logger)
+	: IConsumptionService
 {
-	private readonly IGraphClientWrapper _graphClientWrapper;
-	private readonly IConsumptionViewModelFactory _consumptionViewModelFactory;
-	private readonly ILogger<ConsumptionService> _logger;
-
-	public ConsumptionService(IGraphClientWrapper graphClientWrapper,
-		IConsumptionViewModelFactory consumptionViewModelFactory,
-		ILogger<ConsumptionService> logger)
-	{
-		_graphClientWrapper = graphClientWrapper;
-		_consumptionViewModelFactory = consumptionViewModelFactory;
-		_logger = logger;
-	}
-
 	public async Task<ConsumptionViewModel> GetConsumptionAsync(int noOfDays)
 	{
-		_logger.LogDebug("Trying to get consumption from service...");
+		logger.LogDebug("Trying to get consumption from service...");
 		var response = await GetPriceFromServiceAsync(noOfDays);
 
 		if (response.Errors != null && response.Errors.Any())
 		{
 			foreach (var error in response.Errors)
 			{
-				_logger.LogError(error.Message);
+				logger.LogError(error.Message);
 			}
 		}
 
-		_logger.LogDebug($"Searching consumption info for the last {noOfDays} days!");
+		logger.LogDebug($"Searching consumption info for the last {noOfDays} days!");
 
 		var consumptionResult = response.Data.Viewer.Homes.FirstOrDefault();
 
 		if (consumptionResult == null) throw new NullReferenceException("There is no consumption info!");
 
-		var consumptionViewModel = _consumptionViewModelFactory.CreateModel(consumptionResult.Consumption.Nodes);
+		var consumptionViewModel = consumptionViewModelFactory.CreateModel(consumptionResult.Consumption.Nodes);
 		return consumptionViewModel;
 	}
 
@@ -67,7 +58,7 @@ public class ConsumptionService : IConsumptionService
 			Variables = new { days = noOfDays }
 		};
 
-		var result = await _graphClientWrapper.SendQueryAsync<ConsumptionWrapper>(query);
+		var result = await graphClientWrapper.SendQueryAsync<ConsumptionWrapper>(query);
 
 		return result;
 	}

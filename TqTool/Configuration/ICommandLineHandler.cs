@@ -1,4 +1,4 @@
-﻿namespace TqTool;
+﻿namespace TqTool.Configuration;
 
 public interface ICommandLineHandler
 {

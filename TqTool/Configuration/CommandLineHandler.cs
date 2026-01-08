@@ -3,40 +3,29 @@ using TqTool.Features.Consumption;
 using TqTool.Features.Owner;
 using TqTool.Features.Price;
 
-namespace TqTool;
+namespace TqTool.Configuration;
 
-public class CommandLineHandler : ICommandLineHandler
+public class CommandLineHandler(
+	IOwnerService ownerService,
+	IPriceService priceService,
+	IConsumptionService consumptionService,
+	ILogger<CommandLineHandler> logger)
+	: ICommandLineHandler
 {
-	private readonly ILogger<CommandLineHandler> _logger;
-	private readonly IOwnerService _ownerService;
-	private readonly IPriceService _priceService;
-	private readonly IConsumptionService _consumptionService;
-
-	public CommandLineHandler(IOwnerService ownerService,
-		IPriceService priceService,
-		IConsumptionService consumptionService,
-		ILogger<CommandLineHandler> logger)
-	{
-		_ownerService = ownerService;
-		_priceService = priceService;
-		_consumptionService = consumptionService;
-		_logger = logger;
-	}
-
 	public async Task GetHomesAsync()
 	{
 		try
 		{
-			_logger.LogDebug("Trying to get homes from service...");
-			var homes = (await _ownerService.GetOwnerHomesAsync()).ToList();
-			_logger.LogDebug($"Found {homes.Count} homes!");
+			logger.LogDebug("Trying to get homes from service...");
+			var homes = (await ownerService.GetOwnerHomesAsync()).ToList();
+			logger.LogDebug($"Found {homes.Count} homes!");
 			var firstHome = homes.FirstOrDefault();
 
 			Console.WriteLine($"Showing first home (only): {firstHome?.Address.Address1} {firstHome?.Address.City}");
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex.Message);
+			logger.LogError(ex.Message);
 		}
 	}
 
@@ -44,14 +33,14 @@ public class CommandLineHandler : ICommandLineHandler
 	{
 		try
 		{
-			_logger.LogDebug("Trying to get owner from service...");
-			var owner = await _ownerService.GetOwnerAsync();
+			logger.LogDebug("Trying to get owner from service...");
+			var owner = await ownerService.GetOwnerAsync();
 
 			Console.WriteLine($"Showing the owner: {owner.Name}");
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex.Message);
+			logger.LogError(ex.Message);
 		}
 	}
 
@@ -59,8 +48,8 @@ public class CommandLineHandler : ICommandLineHandler
 	{
 		try
 		{
-			_logger.LogDebug("Trying to get prices from service...");
-			var priceSummary = await _priceService.GetPriceAsync(hours);
+			logger.LogDebug("Trying to get prices from service...");
+			var priceSummary = await priceService.GetPriceAsync(hours);
 
 			Console.WriteLine("All prices are in öre");
 			Console.WriteLine($"Current price: {priceSummary.CurrentPrice.Price} (tax: {priceSummary.CurrentPrice.Tax})");
@@ -73,7 +62,7 @@ public class CommandLineHandler : ICommandLineHandler
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex.Message);
+			logger.LogError(ex.Message);
 		}
 	}
 
@@ -81,8 +70,8 @@ public class CommandLineHandler : ICommandLineHandler
 	{
 		try
 		{
-			_logger.LogDebug("Trying to get consumption from service...");
-			var consumptionViewModel = await _consumptionService.GetConsumptionAsync(days);
+			logger.LogDebug("Trying to get consumption from service...");
+			var consumptionViewModel = await consumptionService.GetConsumptionAsync(days);
 
 			Console.WriteLine($"Found {consumptionViewModel.NumberOfDaysBack} consumption prices for the last {days} days");
 
@@ -102,7 +91,7 @@ public class CommandLineHandler : ICommandLineHandler
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex.Message);
+			logger.LogError(ex.Message);
 		}
 	}
 }
