@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
-using System.CommandLine.Builder;
 
 namespace TqTool.Configuration;
 
@@ -9,21 +8,24 @@ public static class CommandLineBuilderFactory
 	private const int _maxDefaultHoursConst = 12;
 	private const int _defaultDaysConst = 5;
 
-	public static CommandLineBuilder BuildRootCommand(ServiceProvider serviceProvider)
+	public static RootCommand BuildRootCommand(ServiceProvider serviceProvider)
 	{
-		var inputHoursOption = new Option<int?>(
-			name: "-hrs",
-			getDefaultValue: () => _maxDefaultHoursConst,
-			description: $"Get price for n number of hours forward (maximum {_maxDefaultHoursConst}hrs)");
+		var inputHoursOption = new Option<int?>("-hrs")
+		{
+			Description = $"Get price for n number of hours forward (maximum {_maxDefaultHoursConst}hrs)",
+			DefaultValueFactory = _ => _maxDefaultHoursConst
+		};
 
-		var maxInputOptions = new Option<bool>(
-			name: "-max",
-			description: "Get price for maximum number of hours forward");
+		var maxInputOptions = new Option<bool>("-max")
+		{
+			Description = "Get price for maximum number of hours forward"
+		};
 
-		var inputDaysOption = new Option<int?>(
-			name: "-days",
-			getDefaultValue: () => _defaultDaysConst,
-			description: "Get consumption for given number of days");
+		var inputDaysOption = new Option<int?>("-days")
+		{
+			Description = "Get consumption for given number of days",
+			DefaultValueFactory = _ => _defaultDaysConst
+		};
 
 		var priceCommand = new Command("price", "Gets the price") { inputHoursOption, maxInputOptions };
 		var ownerCommand = new Command("owner", "Gets owner information");
@@ -32,32 +34,34 @@ public static class CommandLineBuilderFactory
 
 		var rootCommand = new RootCommand("Gets information from Tibber api");
 
-		rootCommand.AddCommand(priceCommand);
-		rootCommand.AddCommand(ownerCommand);
-		rootCommand.AddCommand(homesCommand);
-		rootCommand.AddCommand(costCommand);
+		rootCommand.Add(priceCommand);
+		rootCommand.Add(ownerCommand);
+		rootCommand.Add(homesCommand);
+		rootCommand.Add(costCommand);
 
-		priceCommand.SetHandler(async (hours, max) =>
+		priceCommand.SetAction(async (parseResult, _) =>
 		{
-			await GetPriceAsync(serviceProvider, hours!, max);
-		}, inputHoursOption, maxInputOptions);
+			var hours = parseResult.GetValue(inputHoursOption);
+			var max = parseResult.GetValue(maxInputOptions);
+			await GetPriceAsync(serviceProvider, hours, max);
+		});
 
-		ownerCommand.SetHandler(async () =>
+		ownerCommand.SetAction(async (_, _) =>
 		{
 			await GetOwnerAsync(serviceProvider);
 		});
 
-		homesCommand.SetHandler(async () =>
+		homesCommand.SetAction(async (_, _) =>
 		{
 			await GetHomesAsync(serviceProvider);
 		});
 
-		costCommand.SetHandler(async days =>
+		costCommand.SetAction(async (parseResult, _) =>
 		{
-			await GetConsumptionAsync(serviceProvider, days);
-		}, inputDaysOption);
+			await GetConsumptionAsync(serviceProvider, parseResult.GetValue(inputDaysOption));
+		});
 
-		return new CommandLineBuilder(rootCommand);
+		return rootCommand;
 	}
 
 	private static async Task GetOwnerAsync(ServiceProvider serviceProvider)
