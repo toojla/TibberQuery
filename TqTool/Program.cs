@@ -12,11 +12,21 @@ public class Program
 
 	private static async Task<int> Main(string[] args)
 	{
-		_configuration = SetupConfiguration.InitConfiguration();
-		_serviceProvider = SetupConfiguration.ConfigureServices(_configuration).BuildServiceProvider();
+		try
+		{
+			_configuration = SetupConfiguration.InitConfiguration();
+			_serviceProvider = SetupConfiguration.ConfigureServices(_configuration).BuildServiceProvider();
 
-		var rootCommand = CommandLineBuilderFactory.BuildRootCommand(_serviceProvider);
+			var rootCommand = CommandLineBuilderFactory.BuildRootCommand(_serviceProvider);
 
-		return await rootCommand.Parse(args).InvokeAsync();
+			return await rootCommand.Parse(args).InvokeAsync();
+		}
+		catch (Exception ex)
+		{
+			// Startup failures, such as an unreadable settings file, would otherwise reach the
+			// console as a stack trace before any command had a chance to run.
+			Console.Error.WriteLine(ex.Message);
+			return 1;
+		}
 	}
 }

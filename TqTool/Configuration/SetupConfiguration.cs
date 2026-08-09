@@ -3,7 +3,6 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 using TqTool.Features.Consumption;
@@ -21,13 +20,29 @@ public static class SetupConfiguration
 		var location = Path.GetDirectoryName(Assembly.GetAssembly(typeof(Program))?.Location);
 		if (string.IsNullOrEmpty(location)) throw new InvalidOperationException("Could not determine application location.");
 
+		// Later sources win. The file shipped beside the executable is only a default, so anything
+		// stored by `tqtool config` overrides it; an environment specific file and then environment
+		// variables still override that, which keeps debugging and one-off runs working as before.
 		var configuration = new ConfigurationBuilder()
 			.SetBasePath(location)
 			.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+			.AddInMemoryCollection(ReadUserSettings())
 			.AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true)
 			.AddEnvironmentVariables()
 			.Build();
 		return configuration;
+	}
+
+	private static IEnumerable<KeyValuePair<string, string?>> ReadUserSettings()
+	{
+		var (endpoint, token) = UserSettings.Default.Read();
+		var settings = new Dictionary<string, string?>();
+
+		// Blank entries are skipped so a half filled file cannot wipe out another source.
+		if (!string.IsNullOrWhiteSpace(endpoint)) settings["apiEndpoint"] = endpoint;
+		if (!string.IsNullOrWhiteSpace(token)) settings["apiToken"] = token;
+
+		return settings;
 	}
 
 	public static IServiceCollection ConfigureServices(IConfigurationRoot configuration)
@@ -61,8 +76,8 @@ public static class SetupConfiguration
 		if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(token))
 		{
 			throw new InvalidOperationException(
-				"apiEndpoint and apiToken are not configured. Copy template.appsettings.json to appsettings.json " +
-				"next to the executable, or set the apiEndpoint and apiToken environment variables.");
+				"apiEndpoint and apiToken are not configured. Run: tqtool config -token <token> -endpoint <url>  " +
+				"(or set the apiEndpoint and apiToken environment variables).");
 		}
 
 		var graphQlHttpClient = new GraphQLHttpClient(endpoint, new NewtonsoftJsonSerializer());

@@ -22,13 +22,20 @@ dotnet tool install --global --add-source TqTool\bin\Release TqTool
 dotnet tool uninstall --global TqTool
 ```
 
-Commands: `price [-hrs n|-max]`, `cost [-days n]`, `owner`, `homes`.
+Commands: `price [-hrs n|-max]`, `cost [-days n]`, `owner`, `homes`, `config [-token x] [-endpoint url] [-show]`.
 
 ## Configuration
 
-Settings come from `appsettings.json` (gitignored — copy `TqTool/template.appsettings.json` and fill in `apiEndpoint` / `apiToken` from https://developer.tibber.com/), overlaid by `appsettings.{ASPNETCORE_ENVIRONMENT}.json`, then environment variables. The launch profile sets `ASPNETCORE_ENVIRONMENT=development`, so local debugging uses `appsettings.development.json` (also gitignored).
+Four sources, each optional, **later ones winning** (`SetupConfiguration.InitConfiguration`):
 
-Every source is optional: `apiEndpoint`/`apiToken` can be supplied purely as environment variables, which is the way to configure an installed global tool without shipping a secret inside the package. The api client is built on first resolve, so `--help` works with no configuration at all; a command that needs credentials fails with an actionable message and exit code 1.
+1. `appsettings.json` beside the executable — a shipped default, and the file `template.appsettings.json` is a template for. Gitignored.
+2. `%APPDATA%\tqtool\appsettings.json` (`UserSettings.DefaultFilePath`) — written by `tqtool config`. In the user profile, not the tool directory, because dotnet replaces the latter on every tool update.
+3. `appsettings.{ASPNETCORE_ENVIRONMENT}.json` — the launch profile sets `development`, so debugging keeps using `appsettings.development.json` even if user settings exist. Gitignored.
+4. Environment variables `apiEndpoint` / `apiToken` — highest, for CI and one-off runs.
+
+Blank values in the user file are skipped rather than applied, so a half-filled file cannot wipe out another source.
+
+`tqtool config` deliberately bypasses `ICommandLineHandler`: resolving that constructs the api client, which refuses to start without credentials, so routing the command that *supplies* credentials through it would deadlock on itself. The client is otherwise built on first resolve, so `--help` works with no configuration at all, and a command needing credentials fails with an actionable message and exit code 1.
 
 Config is loaded from the **assembly directory**, not the current working directory (`SetupConfiguration.InitConfiguration` uses `Assembly.GetAssembly(typeof(Program)).Location`) — this is what makes it work when installed globally. The corollary is that a settings file which isn't copied to the output directory is never read, and since the environment overlay is loaded with `optional: true` that failure is silent: you get whatever `appsettings.json` holds. `appsettings.development.json` is therefore copied in **Debug only** (`Pack=false`), so a real token can't reach a packed release.
 
