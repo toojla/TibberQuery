@@ -34,7 +34,9 @@ Config is loaded from the **assembly directory**, not the current working direct
 
 Flow: `Program` → `CommandLineBuilderFactory` → `ICommandLineHandler` → feature service → `IGraphClientWrapper` → Tibber GraphQL.
 
-**Two containers exist — register services in the right one.** `Program.Main` builds its own `ServiceProvider` from `SetupConfiguration.ConfigureServices` and hands it to `CommandLineBuilderFactory.BuildRootCommand`; command handlers resolve everything from *that* provider. The `.UseHost(...)` generic-host wiring alongside it (Serilog, scope validation) does not feed the command handlers. New services go in `SetupConfiguration.ConfigureServices`.
+**One container, built by hand.** `Program.Main` builds a `ServiceProvider` from `SetupConfiguration.ConfigureServices` and hands it to `CommandLineBuilderFactory.BuildRootCommand`; command handlers resolve everything from that provider via `GetRequiredService`. There is no generic host — new services go in `SetupConfiguration.ConfigureServices`.
+
+**System.CommandLine is the 2.0 GA API**, not the old beta. Options are built with object initialisers (`Description`, `DefaultValueFactory`), not constructor arguments; handlers are `SetAction((parseResult, ct) => ...)` reading values via `parseResult.GetValue(option)`. `CommandLineBuilder`, `SetHandler`, and `AddCommand` no longer exist. `System.CommandLine.Hosting` is deliberately absent — it still targets the beta5 line and cannot coexist with GA.
 
 **Feature folders.** Each feature is `Features/<Name>/` containing `I<Name>Service` + `<Name>Service`, optionally `I<Name>ViewModelFactory` + factory, and `Models/<Name>Models.cs` (all `record` types, positional). Services hold their GraphQL query strings inline as verbatim strings and shape the response into a view model via the factory; factories are pure and hold the unit conversion / rounding logic.
 

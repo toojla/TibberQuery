@@ -75,16 +75,4 @@ public static class SetupConfiguration
 				break;
 		}
 	}
-
-	public static IHostBuilder CreateHostBuilder(string[] args)
-	{
-		var hostBuilder = Host.CreateDefaultBuilder(args)
-			.ConfigureAppConfiguration((context, builder) =>
-			{
-				var location = Path.GetDirectoryName(Assembly.GetAssembly(typeof(Program))?.Location);
-				builder.SetBasePath(location ?? string.Empty);
-			});
-
-		return hostBuilder;
-	}
 }
