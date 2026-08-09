@@ -8,6 +8,27 @@ To install this tool as a global tool you will alson need an appsetting.json fil
 # Install
 Verify if the tool is installed: dotnet tool list --global
 
+## Install from a GitHub release
+Releases are published from the release-cli workflow and carry the .nupkg as an asset. Download it into a
+folder and point dotnet at that folder as a package source.
+
+Using the GitHub CLI (PowerShell):
+
+    $dir = Join-Path $env:TEMP "tqtool-release"
+    gh release download --repo toojla/TibberQuery --pattern "*.nupkg" --dir $dir --clobber
+    dotnet tool install --global --add-source $dir TqTool
+
+Replace install with update when the tool is already installed:
+
+    dotnet tool update --global --add-source $dir TqTool
+
+Add --tag v1.2.0 to the download command to fetch a specific version rather than the newest one. Without
+the GitHub CLI, download the .nupkg from the Releases page by hand and use its folder as the --add-source.
+
+Then set your credentials once, see the Tibber api information section below:
+
+    tqtool config -token <your token> -endpoint https://api.tibber.com/v1-beta/gql
+
 ## Install the tool from source
 dotnet tool install --global --add-source <project_root_path>\bin\debug TqTool
 

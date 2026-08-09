@@ -68,3 +68,9 @@ Flow: `Program` → `CommandLineBuilderFactory` → `ICommandLineHandler` → fe
 - File-scoped namespaces; primary constructors for DI (`public class PriceService(IGraphClientWrapper x, ...) : IPriceService`); `record` for all models and view models; nullable enabled.
 - Tests: xUnit + NSubstitute + Shouldly (+ AutoFixture available). `Xunit` and `Shouldly` are global usings in `TqTool.Tests/Usings.cs` — don't re-import them. Arrange/Act/Assert comment blocks, `Method_ShouldDoThing` naming, test files mirror the `Features/<Name>/` layout.
 - The published tool version comes from `<VersionPrefix>` in `TqTool/TqTool.csproj`; bump it before packing a release.
+
+## Releasing
+
+`.github/workflows/release-cli.yml` is manual only (`workflow_dispatch`). It builds, tests, packs, and publishes the `.nupkg` as a GitHub Release tagged `v<Version>`, keeping the newest `KEEP_RELEASES` (4) and deleting older releases with their tags.
+
+The tag comes from MSBuild (`-getProperty:Version`, derived from `<VersionPrefix>`) rather than from a grep, so it cannot disagree with the version stamped on the package. A run whose tag already exists fails deliberately — **bump `<VersionPrefix>` and merge that first**, or the release aborts. Install instructions live only in `Readme.md`, which the release notes link to, so the two cannot drift.
