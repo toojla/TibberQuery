@@ -23,7 +23,7 @@ public static class SetupConfiguration
 
 		var configuration = new ConfigurationBuilder()
 			.SetBasePath(location)
-			.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+			.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
 			.AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true)
 			.AddEnvironmentVariables()
 			.Build();
@@ -32,15 +32,13 @@ public static class SetupConfiguration
 
 	public static IServiceCollection ConfigureServices(IConfigurationRoot configuration)
 	{
-		var token = configuration["apiToken"];
 		var logLevel = configuration["logLevel"] ?? "Debug";
-		var graphQlHttpClient = new GraphQLHttpClient(configuration["apiEndpoint"] ?? string.Empty, new NewtonsoftJsonSerializer());
-		graphQlHttpClient.HttpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
 		var services = new ServiceCollection()
 			.AddMemoryCache();
 
-		services.AddScoped<IGraphQLClient>(s => graphQlHttpClient);
+		// Built on first resolve rather than eagerly, so --help works without any api credentials.
+		services.AddScoped<IGraphQLClient>(_ => CreateGraphQlClient(configuration));
 		services.AddScoped<IOwnerService, OwnerService>();
 		services.AddScoped<IPriceService, PriceService>();
 		services.AddScoped<IConsumptionService, ConsumptionService>();
@@ -52,6 +50,24 @@ public static class SetupConfiguration
 		SetLogLevel(logLevel, services);
 
 		return services;
+	}
+
+	private static IGraphQLClient CreateGraphQlClient(IConfiguration configuration)
+	{
+		var endpoint = configuration["apiEndpoint"];
+		var token = configuration["apiToken"];
+
+		if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(token))
+		{
+			throw new InvalidOperationException(
+				"apiEndpoint and apiToken are not configured. Copy template.appsettings.json to appsettings.json " +
+				"next to the executable, or set the apiEndpoint and apiToken environment variables.");
+		}
+
+		var graphQlHttpClient = new GraphQLHttpClient(endpoint, new NewtonsoftJsonSerializer());
+		graphQlHttpClient.HttpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+		return graphQlHttpClient;
 	}
 
 	private static void SetLogLevel(string logLevel, IServiceCollection services)

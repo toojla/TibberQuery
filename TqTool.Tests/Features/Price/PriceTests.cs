@@ -62,4 +62,38 @@ public class PriceTests
 		actual.UpcomingPrices.ShouldHaveSingleItem();
 		_priceViewModelFactoryMock.Received(1).CreateModel(Arg.Any<PriceInfo>(), Arg.Any<int>());
 	}
+
+	[Fact]
+	public async Task GetPriceAsync_ShouldReportTheApiErrorWhenThereIsNoData()
+	{
+		// Arrange - an auth failure comes back as errors with a null payload
+		var result = new GraphQLResponse<PriceResultWrapper>
+		{
+			Data = null!,
+			Errors = [new GraphQLError { Message = "invalid token" }]
+		};
+
+		_graphClientMock.SendQueryAsync<PriceResultWrapper>(Arg.Any<GraphQLRequest>()).Returns(result);
+
+		// Act
+		var actual = await Should.ThrowAsync<InvalidOperationException>(() => _sut.GetPriceAsync(5));
+
+		// Assert - the api's own words, not a NullReferenceException from dereferencing Data
+		actual.Message.ShouldContain("invalid token");
+	}
+
+	[Fact]
+	public async Task GetPriceAsync_ShouldReportMissingDataWhenTheApiReturnsNothingAtAll()
+	{
+		// Arrange
+		var result = new GraphQLResponse<PriceResultWrapper> { Data = null!, Errors = null };
+
+		_graphClientMock.SendQueryAsync<PriceResultWrapper>(Arg.Any<GraphQLRequest>()).Returns(result);
+
+		// Act
+		var actual = await Should.ThrowAsync<InvalidOperationException>(() => _sut.GetPriceAsync(5));
+
+		// Assert
+		actual.Message.ShouldContain("no data and no errors");
+	}
 }

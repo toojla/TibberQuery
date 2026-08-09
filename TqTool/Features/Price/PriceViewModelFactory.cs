@@ -13,7 +13,7 @@ public class PriceViewModelFactory : IPriceViewModelFactory
 		var tomorrowPrices = priceInfo.Tomorrow.ToList();
 
 		var currentPrice = todayPrices.FirstOrDefault(x => x.StartsAt == referenceDateTime);
-		var comingPrices = todayPrices.Where(x => x.StartsAt > DateTime.Now).Take(hours).ToList();
+		var comingPrices = todayPrices.Where(x => x.StartsAt > now).Take(hours).ToList();
 
 		CompleteMissingPrices(comingPrices, tomorrowPrices, hours);
 

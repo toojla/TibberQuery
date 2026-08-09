@@ -17,7 +17,9 @@ public class ConsumptionViewModelFactory : IConsumptionViewModelFactory
 			}
 
 			var roundedCost = (int)decimal.Round(node.Cost ?? 0, MidpointRounding.ToEven);
-			var unitPrice = node.UnitPrice ?? 0 * 100;
+			// Kept in kr to match the "kr/unit" the handler prints. The parentheses are load bearing:
+			// `node.UnitPrice ?? 0 * 100` binds as `node.UnitPrice ?? (0 * 100)`, so the * 100 never applied.
+			var unitPrice = node.UnitPrice ?? 0;
 			var roundedUnitPrice = Math.Round(unitPrice, 2);
 			var roundedConsumption = (int)decimal.Round(node.Consumption ?? 0, MidpointRounding.ToEven);
 

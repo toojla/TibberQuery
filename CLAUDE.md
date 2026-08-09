@@ -26,7 +26,9 @@ Commands: `price [-hrs n|-max]`, `cost [-days n]`, `owner`, `homes`.
 
 ## Configuration
 
-`appsettings.json` is **required** (`optional: false`) and is gitignored — copy `TqTool/template.appsettings.json` and fill in `apiEndpoint` / `apiToken` from https://developer.tibber.com/. `appsettings.{ASPNETCORE_ENVIRONMENT}.json` overlays it; the launch profile sets `ASPNETCORE_ENVIRONMENT=development`, so local debugging uses `appsettings.development.json` (also gitignored).
+Settings come from `appsettings.json` (gitignored — copy `TqTool/template.appsettings.json` and fill in `apiEndpoint` / `apiToken` from https://developer.tibber.com/), overlaid by `appsettings.{ASPNETCORE_ENVIRONMENT}.json`, then environment variables. The launch profile sets `ASPNETCORE_ENVIRONMENT=development`, so local debugging uses `appsettings.development.json` (also gitignored).
+
+Every source is optional: `apiEndpoint`/`apiToken` can be supplied purely as environment variables, which is the way to configure an installed global tool without shipping a secret inside the package. The api client is built on first resolve, so `--help` works with no configuration at all; a command that needs credentials fails with an actionable message and exit code 1.
 
 Config is loaded from the **assembly directory**, not the current working directory (`SetupConfiguration.InitConfiguration` uses `Assembly.GetAssembly(typeof(Program)).Location`) — this is what makes it work when installed globally. The corollary is that a settings file which isn't copied to the output directory is never read, and since the environment overlay is loaded with `optional: true` that failure is silent: you get whatever `appsettings.json` holds. `appsettings.development.json` is therefore copied in **Debug only** (`Pack=false`), so a real token can't reach a packed release.
 

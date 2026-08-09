@@ -31,4 +31,7 @@ There are a few requirements to this project
 ## Tibber api information
 Development login at tibber, https://developer.tibber.com/
 Private developer key and api endpoint which can be obtained from the developer portal at Tibber
-Key and endpoint needs to be set in appsettings file(s)
+Key and endpoint needs to be set in appsettings file(s), or as the environment variables apiToken and apiEndpoint.
+
+Environment variables are the safer option for the installed global tool: an appsettings.json placed next to
+the executable is included when the tool is packed, so a real token would travel inside the package.

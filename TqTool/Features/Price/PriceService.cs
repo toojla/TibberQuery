@@ -30,7 +30,7 @@ public class PriceService(
 			{
 				foreach (var error in response.Errors)
 				{
-					logger.LogError(error.Message);
+					logger.LogError("{ApiError}", error.Message);
 				}
 			}
 
@@ -44,8 +44,8 @@ public class PriceService(
 		var homes = priceResultWrapper.Viewer.Homes;
 		var home = homes.FirstOrDefault();
 
-		if (home == null) throw new NullReferenceException("There is no price info!");
-		if (home.CurrentSubscription == null) throw new NullReferenceException("There is no current subscription!");
+		if (home == null) throw new InvalidOperationException("There is no price info!");
+		if (home.CurrentSubscription == null) throw new InvalidOperationException("There is no current subscription!");
 
 		var priceSummaryViewModel = priceViewModelFactory.CreateModel(home.CurrentSubscription.PriceInfo, hours);
 		return priceSummaryViewModel;

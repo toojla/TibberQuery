@@ -39,51 +39,26 @@ public static class CommandLineBuilderFactory
 		rootCommand.Add(homesCommand);
 		rootCommand.Add(costCommand);
 
-		priceCommand.SetAction(async (parseResult, _) =>
+		priceCommand.SetAction((parseResult, _) =>
 		{
-			var hours = parseResult.GetValue(inputHoursOption);
-			var max = parseResult.GetValue(maxInputOptions);
-			await GetPriceAsync(serviceProvider, hours, max);
+			var hours = CalculateHours(parseResult.GetValue(inputHoursOption), parseResult.GetValue(maxInputOptions));
+			return RunAsync(serviceProvider, handler => handler.GetPriceAsync(hours));
 		});
 
-		ownerCommand.SetAction(async (_, _) =>
-		{
-			await GetOwnerAsync(serviceProvider);
-		});
+		ownerCommand.SetAction((_, _) => RunAsync(serviceProvider, handler => handler.GetOwnerAsync()));
 
-		homesCommand.SetAction(async (_, _) =>
-		{
-			await GetHomesAsync(serviceProvider);
-		});
+		homesCommand.SetAction((_, _) => RunAsync(serviceProvider, handler => handler.GetHomesAsync()));
 
-		costCommand.SetAction(async (parseResult, _) =>
+		costCommand.SetAction((parseResult, _) =>
 		{
-			await GetConsumptionAsync(serviceProvider, parseResult.GetValue(inputDaysOption));
+			var days = parseResult.GetValue(inputDaysOption) ?? _defaultDaysConst;
+			return RunAsync(serviceProvider, handler => handler.GetConsumptionAsync(days));
 		});
 
 		return rootCommand;
 	}
 
-	private static async Task GetOwnerAsync(ServiceProvider serviceProvider)
-	{
-		var commandLineHandler = serviceProvider.GetRequiredService<ICommandLineHandler>();
-		await commandLineHandler.GetOwnerAsync();
-	}
-
-	private static async Task GetHomesAsync(ServiceProvider serviceProvider)
-	{
-		var commandLineHandler = serviceProvider.GetRequiredService<ICommandLineHandler>();
-		await commandLineHandler.GetHomesAsync();
-	}
-
-	private static async Task GetConsumptionAsync(ServiceProvider serviceProvider, int? days)
-	{
-		var commandLineHandler = serviceProvider.GetRequiredService<ICommandLineHandler>();
-		var daysInt = days ?? _defaultDaysConst;
-		await commandLineHandler.GetConsumptionAsync(daysInt);
-	}
-
-	private static async Task GetPriceAsync(ServiceProvider serviceProvider, int? hours, bool maxInput)
+	public static int CalculateHours(int? hours, bool maxInput)
 	{
 		if (hours is > _maxDefaultHoursConst or < 1)
 		{
@@ -95,9 +70,23 @@ public static class CommandLineBuilderFactory
 			hours = _maxDefaultHoursConst;
 		}
 
-		var calculatedHours = hours ?? _maxDefaultHoursConst;
+		return hours ?? _maxDefaultHoursConst;
+	}
 
-		var commandLineHandler = serviceProvider.GetRequiredService<ICommandLineHandler>();
-		await commandLineHandler.GetPriceAsync(calculatedHours);
+	// Resolving the handler builds the api client, so a missing or invalid configuration surfaces
+	// here rather than inside CommandLineHandler's own try/catch.
+	private static async Task<int> RunAsync(ServiceProvider serviceProvider, Func<ICommandLineHandler, Task> run)
+	{
+		try
+		{
+			var commandLineHandler = serviceProvider.GetRequiredService<ICommandLineHandler>();
+			await run(commandLineHandler);
+			return 0;
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(ex.Message);
+			return 1;
+		}
 	}
 }

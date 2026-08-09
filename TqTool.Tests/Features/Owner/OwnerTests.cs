@@ -24,7 +24,7 @@ public class OwnerTests
 	public async Task GetOwnerAsync_ShouldReturnOwnerName()
 	{
 		// Arrange
-		var owner = new OwnerWrapper(new OwnerModel(_name, "loginnametest", null));
+		var owner = new OwnerWrapper(new OwnerModel(_name, "loginnametest", []));
 		var ownerResponse = new GraphQLResponse<OwnerWrapper>
 		{
 			Data = owner
@@ -46,7 +46,7 @@ public class OwnerTests
 		// Arrange
 		var returnValueSetup = new GraphQLResponse<OwnerWrapper>
 		{
-			Data = new OwnerWrapper(new OwnerModel(string.Empty, string.Empty, null)),
+			Data = new OwnerWrapper(new OwnerModel(string.Empty, string.Empty, [])),
 			Errors = new[] {
 				new GraphQLError { Message = "TestError" },
 				new GraphQLError { Message = "TestError2" } }
@@ -73,7 +73,7 @@ public class OwnerTests
 				new List<Home>
 				{
 					new(100, 3, "test", "testtype",
-						new Address("Adr1", "Adr2", "Adr3", "Test city", 12345, "Sweden"))
+						new Address("Adr1", "Adr2", "Adr3", "Test city", "412 96", "Sweden"))
 				}))
 		};
 
@@ -84,7 +84,9 @@ public class OwnerTests
 
 		// Assert
 		actual.ShouldNotBeNull();
-		actual.ShouldNotBeEmpty();
-		actual.ShouldContain(x => true);
+		var home = actual.ShouldHaveSingleItem();
+		home.Address.City.ShouldBe("Test city");
+		home.Address.PostalCode.ShouldBe("412 96");
+		home.Size.ShouldBe(100);
 	}
 }

@@ -48,6 +48,25 @@ public class ConsumptionTests
 		_consumptionViewModelFactoryMock.Received(1).CreateModel(nodes);
 	}
 
+	[Fact]
+	public async Task GetConsumptionAsync_ShouldReportTheApiErrorWhenThereIsNoData()
+	{
+		// Arrange
+		var result = new GraphQLResponse<ConsumptionWrapper>
+		{
+			Data = null!,
+			Errors = [new GraphQLError { Message = "invalid token" }]
+		};
+
+		_graphClientMock.SendQueryAsync<ConsumptionWrapper>(Arg.Any<GraphQLRequest>()).Returns(result);
+
+		// Act
+		var actual = await Should.ThrowAsync<InvalidOperationException>(() => _sut.GetConsumptionAsync(5));
+
+		// Assert
+		actual.Message.ShouldContain("invalid token");
+	}
+
 	private List<Node> GetNodes(int numberOfNodes)
 	{
 		var enumerable = _fixture.CreateMany<Node>(numberOfNodes);

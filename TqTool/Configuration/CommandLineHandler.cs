@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using TqTool.Features.Consumption;
 using TqTool.Features.Owner;
 using TqTool.Features.Price;
@@ -18,14 +18,14 @@ public class CommandLineHandler(
 		{
 			logger.LogDebug("Trying to get homes from service...");
 			var homes = (await ownerService.GetOwnerHomesAsync()).ToList();
-			logger.LogDebug($"Found {homes.Count} homes!");
+			logger.LogDebug("Found {HomeCount} homes!", homes.Count);
 			var firstHome = homes.FirstOrDefault();
 
 			Console.WriteLine($"Showing first home (only): {firstHome?.Address.Address1} {firstHome?.Address.City}");
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex.Message);
+			logger.LogError(ex, "Could not get the homes");
 		}
 	}
 
@@ -40,7 +40,7 @@ public class CommandLineHandler(
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex.Message);
+			logger.LogError(ex, "Could not get the owner");
 		}
 	}
 
@@ -62,7 +62,7 @@ public class CommandLineHandler(
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex.Message);
+			logger.LogError(ex, "Could not get the prices");
 		}
 	}
 
@@ -91,7 +91,7 @@ public class CommandLineHandler(
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex.Message);
+			logger.LogError(ex, "Could not get the consumption");
 		}
 	}
 }
