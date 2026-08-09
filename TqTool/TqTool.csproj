@@ -34,8 +34,10 @@
 	  <None Update="template.appsettings.json">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
-	  <None Update="appsettings.development.json">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  <!-- Debug only: the dev file holds a real token, so it must never reach a packed release. -->
+	  <None Update="appsettings.development.json" Condition="'$(Configuration)' == 'Debug'">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <Pack>false</Pack>
 	  </None>
 	  <None Update="appsettings.json">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>

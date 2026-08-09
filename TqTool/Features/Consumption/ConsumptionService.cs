@@ -26,6 +26,11 @@ public class ConsumptionService(
 
 		logger.LogDebug($"Searching consumption info for the last {noOfDays} days!");
 
+		if (response.Data == null)
+		{
+			throw new InvalidOperationException($"The Tibber api returned no consumption data: {GraphQlErrors.Describe(response.Errors)}");
+		}
+
 		var consumptionResult = response.Data.Viewer.Homes.FirstOrDefault();
 
 		if (consumptionResult == null) throw new NullReferenceException("There is no consumption info!");

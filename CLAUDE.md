@@ -28,7 +28,7 @@ Commands: `price [-hrs n|-max]`, `cost [-days n]`, `owner`, `homes`.
 
 `appsettings.json` is **required** (`optional: false`) and is gitignored — copy `TqTool/template.appsettings.json` and fill in `apiEndpoint` / `apiToken` from https://developer.tibber.com/. `appsettings.{ASPNETCORE_ENVIRONMENT}.json` overlays it; the launch profile sets `ASPNETCORE_ENVIRONMENT=development`, so local debugging uses `appsettings.development.json` (also gitignored).
 
-Config is loaded from the **assembly directory**, not the current working directory (`SetupConfiguration.InitConfiguration` uses `Assembly.GetAssembly(typeof(Program)).Location`) — this is what makes it work when installed globally. `appsettings.json` and `template.appsettings.json` are `CopyToOutputDirectory=Always`; the development file is deliberately `Never`.
+Config is loaded from the **assembly directory**, not the current working directory (`SetupConfiguration.InitConfiguration` uses `Assembly.GetAssembly(typeof(Program)).Location`) — this is what makes it work when installed globally. The corollary is that a settings file which isn't copied to the output directory is never read, and since the environment overlay is loaded with `optional: true` that failure is silent: you get whatever `appsettings.json` holds. `appsettings.development.json` is therefore copied in **Debug only** (`Pack=false`), so a real token can't reach a packed release.
 
 ## Architecture
 

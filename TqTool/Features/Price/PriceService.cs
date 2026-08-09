@@ -33,6 +33,11 @@ public class PriceService(
 					logger.LogError(error.Message);
 				}
 			}
+
+			if (priceResultWrapper == null)
+			{
+				throw new InvalidOperationException($"The Tibber api returned no price data: {GraphQlErrors.Describe(response.Errors)}");
+			}
 		}
 
 		logger.LogDebug("Found prices, trying to format them...");
