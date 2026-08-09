@@ -1,0 +1,104 @@
+# Manual-only CLI release: build + test the solution, pack the `tqtool` global
+# tool, and publish the .nupkg as a GitHub Release tagged v<Version>.
+#
+# The version comes from <VersionPrefix> in TqTool/TqTool.csproj — bump it and
+# merge that change before running this, or the tag guard fails the run. Only
+# the newest KEEP_RELEASES releases survive; older ones are deleted together
+# with their tags at the end of every run.
+name: release-cli
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write # create the tag + release and upload the asset
+
+concurrency:
+  group: release-cli
+  cancel-in-progress: false # never cancel a run that may have already tagged
+
+env:
+  KEEP_RELEASES: 4
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # This repo has no global.json, so the SDK has to be named here.
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - run: dotnet restore
+
+      - run: dotnet build -c Release --no-restore
+
+      # Every test is self contained; nothing reaches the Tibber api, so no
+      # credentials are needed on the runner.
+      - run: dotnet test -c Release --no-build
+
+      # Ask MSBuild rather than grepping the csproj, so the tag can never
+      # disagree with the version `dotnet pack` stamps on the package itself.
+      # Version is derived from <VersionPrefix> when no suffix is set.
+      - name: Resolve version
+        id: version
+        run: |
+          version=$(dotnet msbuild TqTool/TqTool.csproj -getProperty:Version -v:quiet | tr -d '[:space:]')
+          if [ -z "$version" ]; then
+            echo "::error::Could not read the version from TqTool/TqTool.csproj"
+            exit 1
+          fi
+          echo "Releasing v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # The shallow checkout has no tags, so ask the remote. A hit means the
+      # version was never bumped — releasing anyway would reuse a published tag.
+      - name: Guard against re-releasing an existing version
+        run: |
+          tag="v${{ steps.version.outputs.version }}"
+          if [ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ]; then
+            echo "::error::$tag already exists. Bump <VersionPrefix> in TqTool/TqTool.csproj and merge that change before releasing."
+            exit 1
+          fi
+
+      - run: dotnet pack TqTool -c Release
+
+      # --generate-notes appends the commit/PR changelog since the previous
+      # release to the --notes body. Install steps deliberately live only in
+      # Readme.md, linked from here, so the two can't drift.
+      - name: Publish the release
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          pkg="TqTool/bin/Release/TqTool.$version.nupkg"
+          if [ ! -f "$pkg" ]; then
+            echo "::error::Expected package $pkg was not produced by dotnet pack"
+            exit 1
+          fi
+          gh release create "v$version" "$pkg" \
+            --target "$GITHUB_SHA" \
+            --title "TqTool v$version" \
+            --generate-notes \
+            --notes "Install or upgrade: see [Install from a GitHub release](https://github.com/$GITHUB_REPOSITORY/blob/main/Readme.md#install-from-a-github-release)."
+
+      # Runs after the release exists so the new one counts toward the quota.
+      # Ordered by creation time (oldest evicted first); the tag filter keeps
+      # any future non-CLI release out of scope.
+      - name: Prune old releases
+        run: |
+          stale=$(gh release list --limit 100 --json tagName,createdAt \
+            | jq -r --argjson keep "$KEEP_RELEASES" '
+                map(select(.tagName | test("^v[0-9]+[.][0-9]+[.][0-9]+$")))
+                | sort_by(.createdAt) | reverse | .[$keep:] | .[].tagName')
+          if [ -z "$stale" ]; then
+            echo "Nothing to prune — $KEEP_RELEASES or fewer releases exist."
+            exit 0
+          fi
+          echo "$stale" | while read -r old; do
+            [ -n "$old" ] || continue
+            echo "Deleting release $old and its tag"
+            gh release delete "$old" --yes --cleanup-tag
+          done
