@@ -57,7 +57,8 @@ public class CommandLineHandler(
 
 			foreach (var upcomingPrice in priceSummary.UpcomingPrices)
 			{
-				Console.WriteLine($"{upcomingPrice.StartsAt}, {upcomingPrice.Price} (tax: {upcomingPrice.Tax})");
+				// Rendered in the home's own local time, which is the offset the api sent.
+				Console.WriteLine($"{upcomingPrice.StartsAt:yyyy-MM-dd HH:mm:ss}, {upcomingPrice.Price} (tax: {upcomingPrice.Tax})");
 			}
 		}
 		catch (Exception ex)
@@ -79,7 +80,7 @@ public class CommandLineHandler(
 			{
 				foreach (var consumptionDay in consumptionViewModel.ConsumptionDays)
 				{
-					Console.WriteLine($"{consumptionDay.Day.ToShortDateString()}, {consumptionDay.Cost} kr " +
+					Console.WriteLine($"{consumptionDay.Day:d}, {consumptionDay.Cost} kr " +
 									  $"(Avg. price {consumptionDay.AveragePrice} kr/{consumptionDay.ConsumptionUnit}), " +
 									  $"consumed: {consumptionDay.Consumption} {consumptionDay.ConsumptionUnit}");
 				}

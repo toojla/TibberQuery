@@ -46,9 +46,11 @@ Flow: `Program` → `CommandLineBuilderFactory` → `ICommandLineHandler` → fe
 
 **`CommandLineHandler` is the only presentation layer.** It's the sole place that writes to `Console` and the sole place that catches exceptions (logging them via `ILogger` and returning normally). Services and factories throw freely.
 
+**Times are `DateTimeOffset` everywhere, deliberately.** Tibber sends `"2026-08-09T00:00:00.000+02:00"` — the home's local time with its offset. Deserialising that into `DateTime` yields `Kind=Local`, silently re-expressing the home's schedule in whatever zone the machine runs in. Keeping the offset means the current hour is found by asking which window contains the instant (`StartsAt <= now < StartsAt + 1h`) rather than matching a truncated local hour, which is what makes a DST fold resolvable — the two 02:00s differ only by offset. `PriceViewModelFactory` takes a `TimeProvider` so this is testable; production gets `TimeProvider.System`.
+
 **Notable behaviours**
-- Price responses are cached in `IMemoryCache` under key `"price"` with a 1-hour absolute expiration (`PriceService`). Consumption and owner queries are not cached.
-- `-hrs` is clamped to 1..12 in `CommandLineBuilderFactory`; out-of-range values silently become 12.
+- No caching. An `IMemoryCache` was here once, but the process serves one command and exits, so it could never hit.
+- `-hrs` is clamped to 1..12 by `CommandLineBuilderFactory.CalculateHours`; out-of-range values silently become 12.
 - `PriceViewModelFactory` converts prices to *öre* (× 100, rounded to `int`, `MidpointRounding.ToEven`) and back-fills tomorrow's prices when today's remaining hours don't cover the requested window.
 - `ConsumptionViewModelFactory` skips nodes with `Cost` null or `< 1`, so the reported day count can be lower than `-days`.
 - Auth is a `Bearer` header set once on the shared `GraphQLHttpClient` at container setup.

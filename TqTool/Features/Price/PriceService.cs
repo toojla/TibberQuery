@@ -1,5 +1,4 @@
 ﻿using GraphQL;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using TqTool.Features.Price.Models;
 using TqTool.Infrastructure;
@@ -8,36 +7,27 @@ namespace TqTool.Features.Price;
 
 public class PriceService(
 	IGraphClientWrapper graphClientWrapper,
-	IMemoryCache memoryCache,
 	IPriceViewModelFactory priceViewModelFactory,
 	ILogger<PriceService> logger)
 	: IPriceService
 {
-	private const string _cacheKey = "price";
-
 	public async Task<PriceSummaryViewModel> GetPriceAsync(int hours)
 	{
-		logger.LogDebug("Trying to get prices from cache...");
-		memoryCache.TryGetValue(_cacheKey, out PriceResultWrapper? priceResultWrapper);
+		logger.LogDebug("Trying to get prices from service!");
+		var response = await GetPriceFromServiceAsync();
+		var priceResultWrapper = response.Data;
+
+		if (response.Errors != null && response.Errors.Any())
+		{
+			foreach (var error in response.Errors)
+			{
+				logger.LogError("{ApiError}", error.Message);
+			}
+		}
 
 		if (priceResultWrapper == null)
 		{
-			logger.LogDebug("No cached prices, trying to get prices from service!");
-			var response = await GetPriceFromServiceAsync();
-			priceResultWrapper = response.Data;
-
-			if (response.Errors != null && response.Errors.Any())
-			{
-				foreach (var error in response.Errors)
-				{
-					logger.LogError("{ApiError}", error.Message);
-				}
-			}
-
-			if (priceResultWrapper == null)
-			{
-				throw new InvalidOperationException($"The Tibber api returned no price data: {GraphQlErrors.Describe(response.Errors)}");
-			}
+			throw new InvalidOperationException($"The Tibber api returned no price data: {GraphQlErrors.Describe(response.Errors)}");
 		}
 
 		logger.LogDebug("Found prices, trying to format them...");
@@ -81,14 +71,6 @@ public class PriceService(
 					}"
 		};
 
-		var result = await graphClientWrapper.SendQueryAsync<PriceResultWrapper>(query);
-
-		if (result.Data != null)
-		{
-			memoryCache.Set(_cacheKey, result.Data,
-				new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromHours(1)));
-		}
-
-		return result;
+		return await graphClientWrapper.SendQueryAsync<PriceResultWrapper>(query);
 	}
 }

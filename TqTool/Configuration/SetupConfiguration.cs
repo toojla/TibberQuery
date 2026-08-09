@@ -34,8 +34,9 @@ public static class SetupConfiguration
 	{
 		var logLevel = configuration["logLevel"] ?? "Debug";
 
-		var services = new ServiceCollection()
-			.AddMemoryCache();
+		var services = new ServiceCollection();
+
+		services.AddSingleton(TimeProvider.System);
 
 		// Built on first resolve rather than eagerly, so --help works without any api credentials.
 		services.AddScoped<IGraphQLClient>(_ => CreateGraphQlClient(configuration));
