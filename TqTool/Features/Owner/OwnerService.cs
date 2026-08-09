@@ -30,7 +30,7 @@ public class OwnerService(
 		{
 			foreach (var error in response.Errors)
 			{
-				logger.LogError(error.Message);
+				logger.LogError("{ApiError}", error.Message);
 			}
 		}
 		else
@@ -79,16 +79,13 @@ public class OwnerService(
 		{
 			foreach (var error in response.Errors)
 			{
-				logger.LogError(error.Message);
+				logger.LogError("{ApiError}", error.Message);
 			}
 		}
 		else
 		{
 			logger.LogDebug("Found owner homes...");
-			returnValue.AddRange(response.Data.Viewer.Homes.Select(home => home with
-			{
-				Address = new Address(home.Address.Address1, home.Address.Address2, home.Address.Address3, home.Address.City, home.Address.PostalCode, home.Address.Country)
-			}));
+			returnValue.AddRange(response.Data.Viewer.Homes);
 		}
 
 		return returnValue;

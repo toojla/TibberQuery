@@ -22,11 +22,20 @@ dotnet tool install --global --add-source TqTool\bin\Release TqTool
 dotnet tool uninstall --global TqTool
 ```
 
-Commands: `price [-hrs n|-max]`, `cost [-days n]`, `owner`, `homes`.
+Commands: `price [-hrs n|-max]`, `cost [-days n]`, `owner`, `homes`, `config [-token x] [-endpoint url] [-show]`.
 
 ## Configuration
 
-`appsettings.json` is **required** (`optional: false`) and is gitignored — copy `TqTool/template.appsettings.json` and fill in `apiEndpoint` / `apiToken` from https://developer.tibber.com/. `appsettings.{ASPNETCORE_ENVIRONMENT}.json` overlays it; the launch profile sets `ASPNETCORE_ENVIRONMENT=development`, so local debugging uses `appsettings.development.json` (also gitignored).
+Four sources, each optional, **later ones winning** (`SetupConfiguration.InitConfiguration`):
+
+1. `appsettings.json` beside the executable — a shipped default, and the file `template.appsettings.json` is a template for. Gitignored.
+2. `%APPDATA%\tqtool\appsettings.json` (`UserSettings.DefaultFilePath`) — written by `tqtool config`. In the user profile, not the tool directory, because dotnet replaces the latter on every tool update.
+3. `appsettings.{ASPNETCORE_ENVIRONMENT}.json` — the launch profile sets `development`, so debugging keeps using `appsettings.development.json` even if user settings exist. Gitignored.
+4. Environment variables `apiEndpoint` / `apiToken` — highest, for CI and one-off runs.
+
+Blank values in the user file are skipped rather than applied, so a half-filled file cannot wipe out another source.
+
+`tqtool config` deliberately bypasses `ICommandLineHandler`: resolving that constructs the api client, which refuses to start without credentials, so routing the command that *supplies* credentials through it would deadlock on itself. The client is otherwise built on first resolve, so `--help` works with no configuration at all, and a command needing credentials fails with an actionable message and exit code 1.
 
 Config is loaded from the **assembly directory**, not the current working directory (`SetupConfiguration.InitConfiguration` uses `Assembly.GetAssembly(typeof(Program)).Location`) — this is what makes it work when installed globally. The corollary is that a settings file which isn't copied to the output directory is never read, and since the environment overlay is loaded with `optional: true` that failure is silent: you get whatever `appsettings.json` holds. `appsettings.development.json` is therefore copied in **Debug only** (`Pack=false`), so a real token can't reach a packed release.
 
@@ -44,9 +53,11 @@ Flow: `Program` → `CommandLineBuilderFactory` → `ICommandLineHandler` → fe
 
 **`CommandLineHandler` is the only presentation layer.** It's the sole place that writes to `Console` and the sole place that catches exceptions (logging them via `ILogger` and returning normally). Services and factories throw freely.
 
+**Times are `DateTimeOffset` everywhere, deliberately.** Tibber sends `"2026-08-09T00:00:00.000+02:00"` — the home's local time with its offset. Deserialising that into `DateTime` yields `Kind=Local`, silently re-expressing the home's schedule in whatever zone the machine runs in. Keeping the offset means the current hour is found by asking which window contains the instant (`StartsAt <= now < StartsAt + 1h`) rather than matching a truncated local hour, which is what makes a DST fold resolvable — the two 02:00s differ only by offset. `PriceViewModelFactory` takes a `TimeProvider` so this is testable; production gets `TimeProvider.System`.
+
 **Notable behaviours**
-- Price responses are cached in `IMemoryCache` under key `"price"` with a 1-hour absolute expiration (`PriceService`). Consumption and owner queries are not cached.
-- `-hrs` is clamped to 1..12 in `CommandLineBuilderFactory`; out-of-range values silently become 12.
+- No caching. An `IMemoryCache` was here once, but the process serves one command and exits, so it could never hit.
+- `-hrs` is clamped to 1..12 by `CommandLineBuilderFactory.CalculateHours`; out-of-range values silently become 12.
 - `PriceViewModelFactory` converts prices to *öre* (× 100, rounded to `int`, `MidpointRounding.ToEven`) and back-fills tomorrow's prices when today's remaining hours don't cover the requested window.
 - `ConsumptionViewModelFactory` skips nodes with `Cost` null or `< 1`, so the reported day count can be lower than `-days`.
 - Auth is a `Bearer` header set once on the shared `GraphQLHttpClient` at container setup.

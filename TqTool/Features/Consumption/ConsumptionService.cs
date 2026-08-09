@@ -20,11 +20,11 @@ public class ConsumptionService(
 		{
 			foreach (var error in response.Errors)
 			{
-				logger.LogError(error.Message);
+				logger.LogError("{ApiError}", error.Message);
 			}
 		}
 
-		logger.LogDebug($"Searching consumption info for the last {noOfDays} days!");
+		logger.LogDebug("Searching consumption info for the last {NumberOfDays} days!", noOfDays);
 
 		if (response.Data == null)
 		{
@@ -33,7 +33,7 @@ public class ConsumptionService(
 
 		var consumptionResult = response.Data.Viewer.Homes.FirstOrDefault();
 
-		if (consumptionResult == null) throw new NullReferenceException("There is no consumption info!");
+		if (consumptionResult == null) throw new InvalidOperationException("There is no consumption info!");
 
 		var consumptionViewModel = consumptionViewModelFactory.CreateModel(consumptionResult.Consumption.Nodes);
 		return consumptionViewModel;

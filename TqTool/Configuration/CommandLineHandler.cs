@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using TqTool.Features.Consumption;
 using TqTool.Features.Owner;
 using TqTool.Features.Price;
@@ -18,14 +18,14 @@ public class CommandLineHandler(
 		{
 			logger.LogDebug("Trying to get homes from service...");
 			var homes = (await ownerService.GetOwnerHomesAsync()).ToList();
-			logger.LogDebug($"Found {homes.Count} homes!");
+			logger.LogDebug("Found {HomeCount} homes!", homes.Count);
 			var firstHome = homes.FirstOrDefault();
 
 			Console.WriteLine($"Showing first home (only): {firstHome?.Address.Address1} {firstHome?.Address.City}");
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex.Message);
+			logger.LogError(ex, "Could not get the homes");
 		}
 	}
 
@@ -40,7 +40,7 @@ public class CommandLineHandler(
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex.Message);
+			logger.LogError(ex, "Could not get the owner");
 		}
 	}
 
@@ -57,12 +57,13 @@ public class CommandLineHandler(
 
 			foreach (var upcomingPrice in priceSummary.UpcomingPrices)
 			{
-				Console.WriteLine($"{upcomingPrice.StartsAt}, {upcomingPrice.Price} (tax: {upcomingPrice.Tax})");
+				// Rendered in the home's own local time, which is the offset the api sent.
+				Console.WriteLine($"{upcomingPrice.StartsAt:yyyy-MM-dd HH:mm:ss}, {upcomingPrice.Price} (tax: {upcomingPrice.Tax})");
 			}
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex.Message);
+			logger.LogError(ex, "Could not get the prices");
 		}
 	}
 
@@ -79,7 +80,7 @@ public class CommandLineHandler(
 			{
 				foreach (var consumptionDay in consumptionViewModel.ConsumptionDays)
 				{
-					Console.WriteLine($"{consumptionDay.Day.ToShortDateString()}, {consumptionDay.Cost} kr " +
+					Console.WriteLine($"{consumptionDay.Day:d}, {consumptionDay.Cost} kr " +
 									  $"(Avg. price {consumptionDay.AveragePrice} kr/{consumptionDay.ConsumptionUnit}), " +
 									  $"consumed: {consumptionDay.Consumption} {consumptionDay.ConsumptionUnit}");
 				}
@@ -91,7 +92,7 @@ public class CommandLineHandler(
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex.Message);
+			logger.LogError(ex, "Could not get the consumption");
 		}
 	}
 }

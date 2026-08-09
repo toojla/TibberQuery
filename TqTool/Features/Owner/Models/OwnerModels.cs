@@ -6,7 +6,7 @@ public record OwnerWrapper(OwnerModel Viewer);
 
 public record OwnerResult(string Name);
 
-public record Address(string Address1, string Address2, string Address3, string City, int PostalCode, string Country);
+public record Address(string Address1, string Address2, string Address3, string City, string PostalCode, string Country);
 
 public record Home(int Size, int NumberOfResidents, string TimeZone, string Type, Address Address);
 

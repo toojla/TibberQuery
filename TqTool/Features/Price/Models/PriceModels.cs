@@ -10,8 +10,10 @@ public record CurrentSubscriptionWrapper(PriceInfo PriceInfo);
 
 public record PriceInfo(IEnumerable<EnergyPrice> Today, IEnumerable<EnergyPrice> Tomorrow);
 
-public record EnergyPrice(decimal Total, decimal Energy, decimal Tax, DateTime StartsAt, string Currency);
+// StartsAt keeps the offset the api sent (the home's own local time) rather than being flattened
+// to whatever zone this machine happens to run in.
+public record EnergyPrice(decimal Total, decimal Energy, decimal Tax, DateTimeOffset StartsAt, string Currency);
 
 public record PriceSummaryViewModel(PriceViewModel CurrentPrice, IEnumerable<PriceViewModel> UpcomingPrices);
 
-public record PriceViewModel(int Price, int Tax, DateTime StartsAt);
+public record PriceViewModel(int Price, int Tax, DateTimeOffset StartsAt);

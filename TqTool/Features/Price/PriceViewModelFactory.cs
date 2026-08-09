@@ -1,19 +1,26 @@
-﻿using TqTool.Features.Price.Models;
+using TqTool.Features.Price.Models;
 
 namespace TqTool.Features.Price;
 
-public class PriceViewModelFactory : IPriceViewModelFactory
+public class PriceViewModelFactory(TimeProvider timeProvider) : IPriceViewModelFactory
 {
+	public PriceViewModelFactory() : this(TimeProvider.System)
+	{
+	}
+
 	public PriceSummaryViewModel CreateModel(PriceInfo priceInfo, int hours)
 	{
-		var now = DateTime.Now;
-		var referenceDateTime = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0);
+		// Compared as instants, so the offset each side carries is irrelevant to the comparison.
+		var now = timeProvider.GetUtcNow();
 
 		var todayPrices = priceInfo.Today.ToList();
 		var tomorrowPrices = priceInfo.Tomorrow.ToList();
 
-		var currentPrice = todayPrices.FirstOrDefault(x => x.StartsAt == referenceDateTime);
-		var comingPrices = todayPrices.Where(x => x.StartsAt > DateTime.Now).Take(hours).ToList();
+		// Each entry covers the hour beginning at StartsAt, so the current price is whichever window
+		// contains this instant. Matching on an exact local hour instead used to fail outright in zones
+		// offset by a half hour, and to pick arbitrarily between the two repeated hours of a DST fold.
+		var currentPrice = todayPrices.FirstOrDefault(x => x.StartsAt <= now && now < x.StartsAt.AddHours(1));
+		var comingPrices = todayPrices.Where(x => x.StartsAt > now).Take(hours).ToList();
 
 		CompleteMissingPrices(comingPrices, tomorrowPrices, hours);
 
@@ -46,7 +53,7 @@ public class PriceViewModelFactory : IPriceViewModelFactory
 
 	private PriceViewModel GetPriceViewModel(EnergyPrice? currentPrice)
 	{
-		if (currentPrice == null) return new PriceViewModel(0, 0, DateTime.Now);
+		if (currentPrice == null) return new PriceViewModel(0, 0, timeProvider.GetLocalNow());
 
 		var price = currentPrice.Total * 100;
 		var roundedPrice = (int)decimal.Round(price, MidpointRounding.ToEven);

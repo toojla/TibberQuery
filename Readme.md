@@ -31,4 +31,15 @@ There are a few requirements to this project
 ## Tibber api information
 Development login at tibber, https://developer.tibber.com/
 Private developer key and api endpoint which can be obtained from the developer portal at Tibber
-Key and endpoint needs to be set in appsettings file(s)
+
+Once the tool is installed, store them with the config command instead of editing any file:
+
+    tqtool config -token <your token> -endpoint https://api.tibber.com/v1-beta/gql
+    tqtool config -show
+
+This writes to %APPDATA%\tqtool\appsettings.json, which survives tool updates. The token is never printed
+back by -show. The environment variables apiToken and apiEndpoint override it, and an appsettings.json next
+to the executable acts as a default beneath it.
+
+Avoid putting a real token in the appsettings.json beside the executable: that file is included when the
+tool is packed, so the token would travel inside the package.

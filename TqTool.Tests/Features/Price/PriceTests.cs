@@ -1,6 +1,5 @@
 ﻿using Shouldly;
 using GraphQL;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using TqTool.Features.Price;
@@ -11,15 +10,15 @@ namespace TqTool.Tests.Features.Price;
 
 public class PriceTests
 {
+	private static readonly DateTimeOffset _startsAt = new(2026, 8, 9, 19, 0, 0, TimeSpan.FromHours(2));
 	private readonly IPriceService _sut;
 	private readonly IGraphClientWrapper _graphClientMock = Substitute.For<IGraphClientWrapper>();
-	private readonly IMemoryCache _memoryCacheMock = Substitute.For<IMemoryCache>();
 	private readonly IPriceViewModelFactory _priceViewModelFactoryMock = Substitute.For<IPriceViewModelFactory>();
 	private readonly ILogger<PriceService> _logger = Substitute.For<ILogger<PriceService>>();
 
 	public PriceTests()
 	{
-		_sut = new PriceService(_graphClientMock, _memoryCacheMock, _priceViewModelFactoryMock, _logger);
+		_sut = new PriceService(_graphClientMock, _priceViewModelFactoryMock, _logger);
 	}
 
 	[Fact]
@@ -28,28 +27,26 @@ public class PriceTests
 		// Arrange
 		const int hours = 5;
 		const int price = 10;
-		var cacheEntry = Substitute.For<ICacheEntry>();
 
 		var priceResultWrapper = new PriceResultWrapper(new PriceResult(new List<HomeWrapper>
 		{
 			new (new CurrentSubscriptionWrapper(
 				new PriceInfo(new List<EnergyPrice>
 				{
-					new (price, 1, 1, new DateTime(), "")
+					new (price, 1, 1, _startsAt, "")
 				},new List<EnergyPrice>
 				{
-					new (1,1,1, new DateTime(),"")
+					new (1,1,1, _startsAt,"")
 				})))
 		}));
 
-		var priceSummaryViewModel = new PriceSummaryViewModel(new PriceViewModel(price, 1, new DateTime()), new List<PriceViewModel>
+		var priceSummaryViewModel = new PriceSummaryViewModel(new PriceViewModel(price, 1, _startsAt), new List<PriceViewModel>
 		{
-			new (price, 1, new DateTime())
+			new (price, 1, _startsAt)
 		});
 
 		var result = new GraphQLResponse<PriceResultWrapper> { Data = priceResultWrapper };
 
-		_memoryCacheMock.CreateEntry(Arg.Any<object>()).Returns(cacheEntry);
 		_graphClientMock.SendQueryAsync<PriceResultWrapper>(Arg.Any<GraphQLRequest>()).Returns(result);
 		_priceViewModelFactoryMock.CreateModel(Arg.Any<PriceInfo>(), Arg.Any<int>()).Returns(priceSummaryViewModel);
 
@@ -61,5 +58,39 @@ public class PriceTests
 		actual.CurrentPrice.Price.ShouldBe(price);
 		actual.UpcomingPrices.ShouldHaveSingleItem();
 		_priceViewModelFactoryMock.Received(1).CreateModel(Arg.Any<PriceInfo>(), Arg.Any<int>());
+	}
+
+	[Fact]
+	public async Task GetPriceAsync_ShouldReportTheApiErrorWhenThereIsNoData()
+	{
+		// Arrange - an auth failure comes back as errors with a null payload
+		var result = new GraphQLResponse<PriceResultWrapper>
+		{
+			Data = null!,
+			Errors = [new GraphQLError { Message = "invalid token" }]
+		};
+
+		_graphClientMock.SendQueryAsync<PriceResultWrapper>(Arg.Any<GraphQLRequest>()).Returns(result);
+
+		// Act
+		var actual = await Should.ThrowAsync<InvalidOperationException>(() => _sut.GetPriceAsync(5));
+
+		// Assert - the api's own words, not a NullReferenceException from dereferencing Data
+		actual.Message.ShouldContain("invalid token");
+	}
+
+	[Fact]
+	public async Task GetPriceAsync_ShouldReportMissingDataWhenTheApiReturnsNothingAtAll()
+	{
+		// Arrange
+		var result = new GraphQLResponse<PriceResultWrapper> { Data = null!, Errors = null };
+
+		_graphClientMock.SendQueryAsync<PriceResultWrapper>(Arg.Any<GraphQLRequest>()).Returns(result);
+
+		// Act
+		var actual = await Should.ThrowAsync<InvalidOperationException>(() => _sut.GetPriceAsync(5));
+
+		// Assert
+		actual.Message.ShouldContain("no data and no errors");
 	}
 }
